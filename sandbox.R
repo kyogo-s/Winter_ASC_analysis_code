@@ -46,43 +46,43 @@ plot_cum_hist <- function(source, number, label){
     ks1_2 <- ks.test(h1$counts, h2$counts, alternative = "two.sided")
     ks2_3 <- ks.test(h2$counts, h3$counts, alternative = "two.sided")
     ks2_avg <- ks.test(h2$counts, (h1$counts + h3$counts)/2, alternative = "two.sided")
-
-    KS_stats <- data.frame(ks1_3 = ks1_3$p.value, ks1_2 = ks1_2$p.value, ks2_3 = ks2_3$p.value, ks2_avg = ks2_avg$p.value, location = number)
-    #print(ks1_3)
-    #print(ks1_2)
-    #print(ks2_3)
-
-    return(list(df, KS_stats))
+    print(paste('---', label, number, "KS Test---"))
+    print(ks1_3)
+    print(ks1_2)
+    print(ks2_3)
+    print(ks2_avg)
+    print("--- end ---")
+    stats <- data.frame(ks1_3 = ks1_3$p.value, ks1_2 = ks1_2$p.value, ks2_3 = ks2_3$p.value, ks2_avg = ks2_avg$p.value, location = number)
+    return(list(df, stats))
 }
 
 # Execute commands
-for (i in seq(1, length(overview$name))){
-    filename <- paste('../', overview$name[i], sep = '')
-    celltype <- overview$cell_type[i]
+i = 4
+filename <- paste('../', overview$name[i], sep = '')
+celltype <- overview$cell_type[i]
 
-    df <- read.csv(paste(filename, ".csv", sep = ""))
-    df <- gather(df, type, value)
-    df <- na.omit(df)
-    df$location <- as.factor(substring(df$type, 4, 4))
-    df$when <- as.factor(substring(df$type, 6))
-    df$abs <- abs(df$value)
-    print(length(df$abs))
+df <- read.csv(paste(filename, ".csv", sep = ""))
+df <- gather(df, type, value)
+df <- na.omit(df)
+df$location <- as.factor(substring(df$type, 4, 4))
+df$when <- as.factor(substring(df$type, 6))
+df$abs <- abs(df$value)
+print(length(df$abs))
 
-    hdiff_df <- data.frame()
-    KS_results <- data.frame()
-    for (j in seq(1, length(levels(df$location)))) {
-        res <- plot_cum_hist(df, j, paste(filename, "Loc:",  as.character(j), "cellType:",  celltype))
-        
-        hdiff_df <- rbind(hdiff_df, res[[1]])
-        KS_results <- rbind(KS_results, res[[2]])
-    }
-    fig <- ggplot(hdiff_df, aes(x = index,  y = diff, color = as.factor(location))) + geom_point() + 
-        geom_line(size = 2) + labs(title = paste(filename, celltype))
-    plot(fig)
-    print(paste("--- KS Test ", filename, " ---"))
-    print(KS_results < 0.05)
-    hdiff_df %>%
-        group_by(location) %>%
-        summarize(mean_amp = mean(diff), sd_amp = sd(diff)) %>%
-        ggplot(aes(x = ))
+hdiff_df <- data.frame()
+KS_results <- data.frame()
+
+for (j in seq(1, length(levels(df$location)))) {
+    res <- plot_cum_hist(df, j, paste(filename, "Loc:",  as.character(j), "cellType:",  celltype))
+    
+    hdiff_df <- rbind(hdiff_df, res[[1]])
+    KS_results <- rbind(KS_results, res[[2]])
 }
+fig <- ggplot(hdiff_df, aes(x = index,  y = diff, color = as.factor(location))) + geom_point() + 
+    geom_line(size = 2) + labs(title = paste(filename, celltype))
+plot(fig)
+
+hdiff_df %>%
+    group_by(location) %>%
+    summarize(mean_amp = mean(diff), sd_amp = sd(diff)) %>%
+    ggplot(aes(x = ))
