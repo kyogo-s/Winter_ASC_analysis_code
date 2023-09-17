@@ -127,10 +127,25 @@ for (i in seq(1, length(overview$name))){
 
 a <- all_mean_amplitude %>%
     group_by(file) %>%
-    summarise()
- 
+    arrange(dist) %>%
+    summarise(furthest = mean[length(mean)], celltype = celltype[length(celltype)], dist = dist[length(dist)])
 
+a %>%
+    group_by(celltype) %>%
+    summarise(mean = mean(furthest), sd = sd(furthest), sem = sd(furthest)/sqrt(length(furthest))) %>%
+    ggplot(aes(x = celltype, y = mean, fill = celltype)) + 
+        geom_bar(stat = "identity") + 
+        geom_errorbar(aes(ymin = mean - sem, ymax = mean + sem), width = 0.2) + 
+        labs(title = "Mean amplitude of furthest location", x = "Cell Type", y = "Mean Amplitude (pA)")
 
+ggplot(a, aes(x = as.factor(celltype), y = furthest, fill = as.factor(celltype))) + 
+    geom_boxplot(outlier.shape = NA) + 
+    geom_jitter(color = 'red') +
+    labs(title = "Mean amplitude of furthest location", x = "Cell Type", y = "Mean Amplitude (pA)")
+
+ggplot(a, aes(x = as.factor(celltype), y = furthest, fill = as.factor(celltype))) + 
+    geom_bar(stat = "identity") + 
+    labs(title = "Mean amplitude of furthest location", x = "Cell Type", y = "Mean Amplitude (pA)")   
 
 ggplot(all_mean_amplitude, aes(x = dist, y = mean, color = celltype)) + 
     geom_point() 
