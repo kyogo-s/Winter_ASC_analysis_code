@@ -26,16 +26,20 @@ get_hist_data <- function(raw_data, j, breaks){
     return(list(h1, h2, h3))
 }
 
-plot_cum_hist <- function(hist_data, number, label, plot = TRUE){
-    h1 <- hist_data[[1]]
-    h2 <- hist_data[[2]]
-    h3 <- hist_data[[3]]
+plot_cum_hist <- function(hist_data, number, label, eps, plot = TRUE){
+    h1 <- hist_data[[1]]$count
+    h2 <- hist_data[[2]]$count
+    h3 <- hist_data[[3]]$count
 
-    hdiff <- h2$counts - (h1$counts + h3$counts)/2
-    df <- data.frame(index = seq(1, length(h2$counts)),before = normalise(h1$counts), during = normalise(h2$counts), after = normalise(h3$counts))
+    h1 <- hist_data[[1]]$count/eps[1]
+    h2 <- hist_data[[2]]$count/eps[2]
+    h3 <- hist_data[[3]]$count/eps[3]
+
+    hdiff <- h2 - (h1 + h3)/2
+    df <- data.frame(index = seq(1, length(h2)),before = normalise(h1), during = normalise(h2), after = normalise(h3))
     df <- gather(df, type, value, -index)
 
-    dfalt <- data.frame(index = seq(1, length(h2$counts)), before = h1$counts, during = h2$counts, after = h3$counts)
+    dfalt <- data.frame(index = seq(1, length(h2)), before = h1, during = h2, after = h3)
     dfalt <- gather(dfalt, type, value, -index)
     fig1 <- ggplot(df, aes(x = index, y = value, color = type)) + geom_point() + geom_line(size = 2) + 
         labs(title = paste(label), x = "mEPSC Amplitude (pA)", y = "Normalised Cumulative Density")
@@ -77,7 +81,13 @@ subtraction_analysis <- function(raw_data, hist_data, j, eps, breaks, label){
 
     #mean <- data.frame()
 
-    return(list(df, mean(hdiff)))
+    mean <- mean_from_hist(breaks[1:48], hdiff)
+
+    return(list(df, mean))
+}
+
+mean_from_hist <- function(bins, freqs){
+    return(sum(bins * freqs)/sum(freqs))
 }
 
 # Execute commands
@@ -113,7 +123,7 @@ for (i in seq(1, length(overview$name))){
 
         raw_data <- get_raw_data(df, j, cell_label)
         hist_data <- get_hist_data(raw_data, j, 49)
-        plot_cum_hist(hist_data, j, cell_label)
+        plot_cum_hist(hist_data, j, cell_label, this_eps)
         KS_res <- KS_test(raw_data, j, cell_label)
         hdiff <- subtraction_analysis(raw_data, hist_data, j, this_eps, 49, cell_label)
 
@@ -159,7 +169,7 @@ test <- all_mean_amplitude %>%
 fig <- all_mean_amplitude %>% 
     group_by(celltype, file) %>%
     arrange(dist) %>%
-    mutate(norm_mean = mean/mean[1]) %>%
+    mutate(norm_mean = mean) %>%
     ggplot(aes(x = dist, y = norm_mean, color = celltype)) +
         geom_point(size = 2) + labs(title = "Mean amplitude by distance, normalised to first cell", x = "Distance (uM)", y = "Normalised mean mEPSC Amplitude (a.u.)")
 
